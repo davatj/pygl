@@ -1,0 +1,16 @@
+{
+  "vertices_object": [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
+  ],
+  "faces": [
+    [0, 1, 2]
+  ],
+  "translation": [2, 0, 0],
+  "rotation_deg": [0, 0, 90],
+  "scale": [3, 1, 1],
+  "camera_center": [0, 0, -10],
+  "camera_rotation_deg": [0, 0, 0]
+}
