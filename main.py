@@ -4,7 +4,7 @@ import transform
 import numpy as np
 
 def main():
-    scene = load_scene("cube")
+    scene = load_scene("camera_offset")
 
     T = transform.translation_matrix(scene.translation)
     R = transform.rotation_matrix(scene.rotation[0], scene.rotation[1], scene.rotation[2])
@@ -25,7 +25,7 @@ def main():
     # group two collection of vertices of size (N, 3) to (2, N, 3)
     vertices = np.stack((scene.vertices_object, vertices_view))
 
-    plot_vertices_3d(vertices, np.array(["red", "blue"]))
+    plot_vertices_3d(vertices, np.array(["red", "blue"]), 0, 0)
 
 
 if __name__ == "__main__":

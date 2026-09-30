@@ -4,6 +4,8 @@ import numpy as np
 def plot_vertices_3d(
     vertices_groups: np.ndarray,
     colors: np.ndarray | None = None,
+    elev_deg: float = 15,
+    azim_deg: float = 45
 ) -> None:
 
     """
@@ -16,6 +18,14 @@ def plot_vertices_3d(
         Optional one-dimensional array of color strings with shape (G,).
         If provided, the number of colors must match the number of
         vertex groups.
+
+    elev_deg:
+        Camera elevation angle in degrees. Controls the vertical viewing
+        angle of the 3D plot.
+
+    azim_deg:
+        Camera azimuth angle in degrees. Controls the horizontal rotation
+        of the view around the vertical Y-axis.
     """
 
     if vertices_groups.ndim != 3 or vertices_groups.shape[2] != 3:
@@ -119,8 +129,8 @@ def plot_vertices_3d(
     ax.text(0, 0, radius, "+Z")
 
     ax.view_init(
-        elev=15,
-        azim=45,
+        elev=elev_deg,
+        azim=azim_deg,
         vertical_axis="y",
     )
 
