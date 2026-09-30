@@ -13,7 +13,7 @@ class Scene:
                  rotation_deg: np.ndarray, 
                  scale: np.ndarray, 
                  camera_center: np.ndarray, 
-                 camera_rotation_degs: np.ndarray):
+                 camera_rotation_deg: np.ndarray):
         
         self.vertices_object = vertices_object
         self.faces = faces
@@ -21,7 +21,7 @@ class Scene:
         self.rotation_deg = rotation_deg
         self.scale = scale
         self.camera_center = camera_center
-        self.camera_rotation_degs = camera_rotation_degs
+        self.camera_rotation_deg = camera_rotation_deg
 
 
 def load_scene(scene_name: str) -> Scene:
@@ -66,8 +66,8 @@ def load_scene(scene_name: str) -> Scene:
         
         assert camera_center.shape[0] == 3
 
-        camera_rotation_degs = np.array(data['camera_rotation_deg'] if 'camera_rotation_deg' in data else [0, 0, 0])
+        camera_rotation_deg = np.array(data['camera_rotation_deg'] if 'camera_rotation_deg' in data else [0, 0, 0])
 
-        assert camera_rotation_degs.shape[0] == 3
+        assert camera_rotation_deg.shape[0] == 3
 
-        return Scene(vertices_object, faces, translation, rotation_deg, scale, camera_center, camera_rotation_degs)
+        return Scene(vertices_object, faces, translation, rotation_deg, scale, camera_center, camera_rotation_deg)

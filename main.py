@@ -8,16 +8,15 @@ def main():
 
     T = transforms.translation_matrix(scene.translation)
 
-    rotation = np.deg2rad(scene.rotation_deg)
+    rotation_rad = np.deg2rad(scene.rotation_deg)
 
-    R = transforms.rotation_matrix(*rotation)
+    R = transforms.rotation_matrix(*rotation_rad)
     S = transforms.scaling_matrix(scene.scale)
     M = transforms.model_matrix(T, R, S)
 
-    camera_rotation_rads = np.deg2rad(scene.camera_rotation_degs)
-    R_cam = transforms.rotation_matrix(*camera_rotation_rads)
+    camera_rotation_rad = np.deg2rad(scene.camera_rotation_deg)
 
-    V = transforms.view_matrix(scene.camera_center, R_cam)
+    V = transforms.view_matrix(scene.camera_center, camera_rotation_rad)
 
     vertices_object_homogeneous = transforms.to_homogeneous(scene.vertices_object)
 

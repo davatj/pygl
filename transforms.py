@@ -146,18 +146,22 @@ def object_to_world(vertices_object: np.ndarray, M: np.ndarray) -> np.ndarray:
 
     return (M @ vertices_object.T).T
 
-def view_matrix(camera_center: np.ndarray, R_cam: np.ndarray) -> np.ndarray:
+
+def view_matrix(camera_center: np.ndarray, camera_rotation: np.ndarray) -> np.ndarray:
 
     """
     Forms a view matrix 'V' based on camera's center / position 
-    'camera_center' and base rotation matrix 'R_cam'
+    'camera_center' and 'camera_rotation'
     """
 
-    C = translation_matrix(-camera_center) # inverse translation matrix
+    # inverse rotation matrix = transpose of orthonormal rotation matrix
+    R_inv = rotation_matrix(*camera_rotation).T
 
-    # apply inverse translation first, then rotate
-    # so the translation offsets are as well "rotated"
-    return R_cam @ C
+    T_inv = translation_matrix(-camera_center) # inverse translation matrix
+
+    # apply inverse translation first, then inverse rotation
+    return R_inv @ T_inv
+
 
 def world_to_camera(vertices_world: np.ndarray, V: np.ndarray) -> np.ndarray:
 
@@ -167,6 +171,7 @@ def world_to_camera(vertices_world: np.ndarray, V: np.ndarray) -> np.ndarray:
     """
 
     return (V @ vertices_world.T).T
+
 
 def object_to_camera(vertices_object: np.ndarray, M: np.ndarray, V: np.ndarray) -> np.ndarray:
 
