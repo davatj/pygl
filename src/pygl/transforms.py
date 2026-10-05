@@ -16,21 +16,21 @@ def to_homogeneous(vertices: np.ndarray) -> np.ndarray:
 def from_homogeneous(vertices_h: np.ndarray) -> np.ndarray:
 
     """
-    Receives n vertices in homogeneous space, 'vertices_h', of shape (n, 4)
+    Receives n vertices in d-dimensional homogeneous space, 'vertices_h', of shape (N, D)
 
-    Returns the vertices in 3-dimensional euclidean space, of shape (n, 3), with each vertex coordinate
-    divided by w
+    Returns the vertices in (D-1)-dimensional non-homogeneous space, of shape (N, D-1), 
+    with 'vertices_h' last component w dividing the rest of the component
 
     Hard reject if one of w is 0 by raising ValueError
     """
 
-    w = vertices_h[:, 3]
+    w = vertices_h[:, -1]
 
     if np.any(w == 0):
         raise ValueError("'vertices_h' has 0 in the w component")
 
-    # numpy ndarray broadcasting: w[:, None] of size Nx1 is broadcasted to Nx3, matching vertices_h[:, :3]
-    return vertices_h[:, :3] / w[:, None]
+    # numpy ndarray broadcasting: w[:, None] of size Nx1 is broadcasted to Nx(D-1), matching vertices_h[:, :-1]
+    return vertices_h[:, :-1] / w[:, None]
 
 
 def translation_matrix(t: np.ndarray) -> np.ndarray:
@@ -181,3 +181,25 @@ def object_to_camera(vertices_object: np.ndarray, M: np.ndarray, V: np.ndarray) 
     """
 
     return world_to_camera(object_to_world(vertices_object, M), V)
+
+
+def intrinsic_matrix(f: float, W: int, H: int) -> np.ndarray:
+
+    """
+    Returns matrix that transforms camera space to homogeneous screen space
+    (Xc, Yc, Zc) into (f * Xc + W/2 * Zc, f * Yc + H/2 * Zc, Zc)
+    """
+
+    return np.array([
+        [f, 0, float(W) / 2],
+        [0, f, float(H) / 2],
+        [0, 0, 1],
+    ])
+
+def camera_to_screen_homogeneous(vertices_camera: np.ndarray, f: float, W: int, H: int):
+
+    """
+    Transforms vertices of size (N, 3) from camera space to homogeneous screen space
+    """
+
+    return (intrinsic_matrix(f, W, H) @ vertices_camera.T).T
