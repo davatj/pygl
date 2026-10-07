@@ -76,14 +76,23 @@ class Renderer:
 
                         p = np.array([x + 0.5, y + 0.5])
 
-                        e12p = geometry.orient2d(face[0], face[1], p)
-                        e23p = geometry.orient2d(face[1], face[2], p)
-                        e31p = geometry.orient2d(face[2], face[0], p)
+                        double_area = geometry.orient2d(face[0], face[1], face[2])
+
+                        # find the barycentric coordinates of the pixel center
+                        alpha = geometry.orient2d(face[1], face[2], p) / double_area
+                        beta = geometry.orient2d(face[2], face[0], p) / double_area
+                        gamma = 1 - alpha - beta
 
                         # if the pixel belongs to the triangle
-                        if e12p >= 0 and e23p >= 0 and e31p >= 0:
-                            self.framebuffer[y, x] = np.full((3,), 255)
-                            
+                        # <=> the pixel barycentric weights are all non-negative
+                        if alpha >= 0 and beta >= 0 and gamma >= 0:
+
+                            # depth testing
+                            depth = alpha * face[0][2] + beta * face[1][2] + gamma * face[2][2]
+                            if depth < self.depthbuffer[y, x]:
+                                self.framebuffer[y, x] = np.full((3,), 255)
+                                self.depthbuffer[y, x] = depth
+
 
     def _projection_matrix(self):
 
