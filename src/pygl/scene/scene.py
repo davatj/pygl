@@ -13,7 +13,9 @@ _SCENES_DIR = _BASE_DIR / "assets" / "scenes"
 
 class Scene:
 
-    def __init__(self, meshes: np.ndarray[tuple[int], Mesh], camera: Camera | None = None):
+    def __init__(self, 
+                 meshes: np.ndarray[tuple[int], Mesh], 
+                 camera: Camera | None = None):
         
         """
         Receives scene's multiple meshes and camera
@@ -58,6 +60,10 @@ class Scene:
             # expects ndarray of shape (F, 3)
             assert faces.ndim == 2 and faces.shape[1] == 3
 
+            faces_attrs = data['faces_attributes']
+
+            faces_attrs = {str(k): np.array(v) for k, v in faces_attrs.items()}
+
             translation = np.array(data['translation'] if 'translation' in data else [0, 0, 0])
 
             assert translation.ndim == 1 and translation.shape[0] == 3
@@ -72,7 +78,7 @@ class Scene:
 
             assert scale.ndim == 1 and scale.shape[0] == 3
 
-            mesh = Mesh(vertices, faces, scale, rotation, translation)
+            mesh = Mesh(vertices, faces, faces_attrs, scale, rotation, translation)
 
             camera_center = np.array(data['camera_center'] if 'camera_center' in data else [0, 0, 0])
             

@@ -3,7 +3,9 @@ import numpy as np
 
 class Mesh(SceneObject):
 
-    def __init__(self, vertices: np.ndarray, faces: np.ndarray,
+    def __init__(self, vertices: np.ndarray, 
+                 faces: np.ndarray,
+                 faces_attrs: dict[str, np.ndarray],
                  scale: np.ndarray = np.ones(3),
                  rotation: np.ndarray = np.zeros(3),
                  translation: np.ndarray = np.zeros(3)):
@@ -18,3 +20,4 @@ class Mesh(SceneObject):
 
         self.vertices = vertices
         self.faces = faces
+        self.faces_attrs = faces_attrs

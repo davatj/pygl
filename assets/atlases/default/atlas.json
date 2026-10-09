@@ -1,0 +1,38 @@
+{
+    "tile_size": 16,
+    "material_tile_pos": {
+        "grass_top": [0, 0],
+        "stone": [1, 0],
+        "dirt": [2, 0],
+        "grass_side": [3, 0],
+        "plank": [4, 0],
+        "brick": [7, 0],
+        "tnt_side": [8, 0],
+        "tnt_top": [9, 0],
+        "tnt_bottom": [10, 0],
+
+        "cobblestone": [0, 1],
+        "bedrock": [1, 1],
+        "sand": [2, 1],
+        "gravel": [3, 1],
+        "log_side": [4, 1],
+        "log_top_bottom": [5, 1],
+        "iron_block": [6, 1],
+        "gold_block": [7, 1],
+        "diamond_block": [8, 1],
+
+        "gold_ore": [0, 2],
+        "iron_ore": [1, 2],
+        "coal_ore": [2, 2],
+        "bookshelf": [3, 2],
+        "obsidian": [5, 2],
+        "crafting_table_top": [11, 2],
+        "furnace_front": [12, 2],
+        "furnace_side": [13, 2],
+
+        "crafting_table_side": [11, 3],
+        "crafting_table_front": [12, 3],
+        "furnace_front_active": [13, 3],
+        "furnace_top_bottom": [14, 3]
+    }
+}

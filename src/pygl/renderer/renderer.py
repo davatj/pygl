@@ -1,17 +1,43 @@
 from ..scene.scene import Scene
 from ..transforms import to_homogeneous
 from .. import geometry
+from PIL import Image
+from pathlib import Path
 import numpy as np
 import sdl2
 import ctypes
 import math
+import json
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+
+DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT = 800, 600
+
+_BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+_ATLASES_DIR = _BASE_DIR / "assets" / "atlases"
+
+ATLAS = "default"
+
+_ATLAS_METADATA_PATH = _ATLASES_DIR / ATLAS / "atlas.json"
+_ATLAS_IMAGE_PATH = _ATLASES_DIR / ATLAS / "atlas.png"
+
+ATLAS_IMAGE = Image.open(_ATLAS_IMAGE_PATH).convert("RGB")
+ATLAS_ARR = np.array(ATLAS_IMAGE)
+
+with open(_ATLAS_METADATA_PATH, "r") as file:
+    ATLAS_METADATA = json.load(file)
+
+TILE_SIZE = ATLAS_METADATA["tile_size"]
+MATERIAL_TILE_POS = ATLAS_METADATA["material_tile_pos"]
+
+EPSILON = 1e-4
 
 class Renderer:
 
-    def __init__(self, scene: Scene, width: int = SCREEN_WIDTH, height: int = SCREEN_HEIGHT):
+    def __init__(self, 
+                 scene: Scene, 
+                 width: int = DEFAULT_SCREEN_WIDTH, 
+                 height: int = DEFAULT_SCREEN_HEIGHT):
+        
         self.scene = scene
         self.width = width
         self.height = height
@@ -67,7 +93,12 @@ class Renderer:
 
             for fidx, bbox in enumerate(face_bboxes):
 
-                face = faces[fidx]
+                face = faces[fidx] 
+
+                face_uvs = mesh.faces_attrs["uv"][fidx]
+                face_material = mesh.faces_attrs["material"][fidx]
+
+                tile_pos = np.array(MATERIAL_TILE_POS[face_material])
 
                 # for each pixel in bbox (pair x, y), determine whether the center of pixel 
                 # lies inside the triangle owning the bbox
@@ -85,12 +116,30 @@ class Renderer:
 
                         # if the pixel belongs to the triangle
                         # <=> the pixel barycentric weights are all non-negative
-                        if alpha >= 0 and beta >= 0 and gamma >= 0:
+                        if alpha >= -EPSILON and beta >= -EPSILON and gamma >= -EPSILON:
 
                             # depth testing
                             depth = alpha * face[0][2] + beta * face[1][2] + gamma * face[2][2]
                             if depth < self.depthbuffer[y, x]:
-                                self.framebuffer[y, x] = np.full((3,), 255)
+
+                                wc = vertices_clip[mesh.faces[fidx]][:, 3]
+
+                                bary_weights = np.array([alpha, beta, gamma])
+
+                                # perspective correct uv interpolation
+                                uv_interp = np.sum(face_uvs * (bary_weights / wc)[:, None], axis=0) / np.sum((bary_weights / wc))
+
+                                # reverse the y uv convention, (u, v) translates to (u, 1 - v)
+                                # to match the atlas y-increases-downwards convention
+                                uv_interp[1] = 1 - uv_interp[1]
+
+                                uv_interp = np.clip(uv_interp, 0, np.nextafter(1.0, 0))
+
+                                text_coords = (uv_interp + tile_pos) * TILE_SIZE
+
+                                color = ATLAS_ARR[math.floor(text_coords[1]), math.floor(text_coords[0])]
+
+                                self.framebuffer[y, x] = color
                                 self.depthbuffer[y, x] = depth
 
 
