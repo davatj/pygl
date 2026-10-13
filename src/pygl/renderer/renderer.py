@@ -3,6 +3,7 @@ from ..transforms import to_homogeneous
 from .. import geometry
 from PIL import Image
 from pathlib import Path
+import time
 import numpy as np
 import sdl2
 import ctypes
@@ -16,7 +17,7 @@ _BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 _ATLASES_DIR = _BASE_DIR / "assets" / "atlases"
 
 ATLAS = "default"
-
+ 
 _ATLAS_METADATA_PATH = _ATLASES_DIR / ATLAS / "atlas.json"
 _ATLAS_IMAGE_PATH = _ATLASES_DIR / ATLAS / "atlas.png"
 
@@ -41,6 +42,7 @@ class Renderer:
         self.scene = scene
         self.width = width
         self.height = height
+        self.input = Input()
 
         # initialize framebuffer with all-zeros (H, W, 3) RGB tensor
         self.framebuffer = np.zeros((height, width, 3), dtype=np.uint8)
@@ -58,6 +60,9 @@ class Renderer:
 
         Every pixel RGB value is then stored in `Renderer.framebuffer`
         """
+
+        self.framebuffer = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        self.depthbuffer = np.full((self.height, self.width), np.inf)
 
         for mesh in self.scene.meshes:
 
@@ -159,17 +164,12 @@ class Renderer:
 
     def render(self):
 
-        self.rasterize()
-
-        # reverse the y-direction so y=0 is at the top
-        framebuffer = np.ascontiguousarray(self.framebuffer[::-1, :, :])
-
-        height, width, _ = framebuffer.shape
-
         sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
 
+        height, width, _ = self.framebuffer.shape
+
         window = sdl2.SDL_CreateWindow(
-            b"Rasterizer",
+            b"Renderer",
             sdl2.SDL_WINDOWPOS_CENTERED,
             sdl2.SDL_WINDOWPOS_CENTERED,
             width,
@@ -191,26 +191,122 @@ class Renderer:
             height,
         )
 
-        sdl2.SDL_UpdateTexture(
-            texture,
-            None,
-            framebuffer.ctypes.data_as(ctypes.c_void_p),
-            width * 3,
-        )
+        self.last_time = time.perf_counter()
 
-        sdl2.SDL_RenderClear(renderer)
-        sdl2.SDL_RenderCopy(renderer, texture, None, None)
-        sdl2.SDL_RenderPresent(renderer)
-
-        event = sdl2.SDL_Event()
         running = True
 
         while running:
-            while sdl2.SDL_PollEvent(ctypes.byref(event)):
-                if event.type == sdl2.SDL_QUIT:
-                    running = False
+
+            now = time.perf_counter()
+            dt = now - self.last_time
+            self.last_time = now
+
+            self.input.poll_events()
+
+            if self.input.quit:
+                break
+
+            self.scene.camera.translation[0] -= dt
+
+            self.rasterize()
+
+            # reverse the y-direction so y=0 is at the top
+            framebuffer = np.ascontiguousarray(self.framebuffer[::-1, :, :])
+
+            sdl2.SDL_UpdateTexture(
+                texture,
+                None,
+                framebuffer.ctypes.data_as(ctypes.c_void_p),
+                width * 3,
+            )
+    
+            sdl2.SDL_RenderClear(renderer)
+            sdl2.SDL_RenderCopy(renderer, texture, None, None)
+            sdl2.SDL_RenderPresent(renderer)
 
         sdl2.SDL_DestroyTexture(texture)
         sdl2.SDL_DestroyRenderer(renderer)
         sdl2.SDL_DestroyWindow(window)
         sdl2.SDL_Quit()
+
+
+class Input:
+    def __init__(self):
+        self.keys_held = set()
+        self.keys_pressed = set()
+        self.keys_released = set()
+
+        self.mouse_buttons_held = set()
+        self.mouse_buttons_pressed = set()
+        self.mouse_buttons_released = set()
+
+        self.mouse_dx = 0
+        self.mouse_dy = 0
+        self.quit = False
+
+        self.event = sdl2.SDL_Event()
+
+    def begin_frame(self):
+        # Clear only transient state; preserve held state.
+        self.keys_pressed.clear()
+        self.keys_released.clear()
+
+        self.mouse_buttons_pressed.clear()
+        self.mouse_buttons_released.clear()
+
+        self.mouse_dx = 0
+        self.mouse_dy = 0
+
+    def poll_events(self):
+        self.begin_frame()
+
+        while sdl2.SDL_PollEvent(ctypes.byref(self.event)):
+            e = self.event
+
+            if e.type == sdl2.SDL_QUIT:
+                self.quit = True
+
+            elif e.type == sdl2.SDL_KEYDOWN:
+                key = e.key.keysym.sym
+
+                # Only register the transition from up to down.
+                if key not in self.keys_held:
+                    self.keys_held.add(key)
+                    self.keys_pressed.add(key)
+
+            elif e.type == sdl2.SDL_KEYUP:
+                key = e.key.keysym.sym
+
+                if key in self.keys_held:
+                    self.keys_held.remove(key)
+                    self.keys_released.add(key)
+
+            elif e.type == sdl2.SDL_MOUSEBUTTONDOWN:
+                button = e.button.button
+
+                if button not in self.mouse_buttons_held:
+                    self.mouse_buttons_held.add(button)
+                    self.mouse_buttons_pressed.add(button)
+
+            elif e.type == sdl2.SDL_MOUSEBUTTONUP:
+                button = e.button.button
+
+                if button in self.mouse_buttons_held:
+                    self.mouse_buttons_held.remove(button)
+                    self.mouse_buttons_released.add(button)
+
+            elif e.type == sdl2.SDL_MOUSEMOTION:
+                self.mouse_dx += e.motion.xrel
+                self.mouse_dy += e.motion.yrel
+
+            elif (
+                e.type == sdl2.SDL_WINDOWEVENT
+                and e.window.event == sdl2.SDL_WINDOWEVENT_FOCUS_LOST
+            ):
+                self.keys_released.update(self.keys_held)
+                self.keys_held.clear()
+
+                self.mouse_buttons_released.update(
+                    self.mouse_buttons_held
+                )
+                self.mouse_buttons_held.clear()
